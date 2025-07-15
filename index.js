@@ -127,7 +127,7 @@ async function handleButton(interaction) {
     }
 
     if (interaction.customId === 'preview_confirm') {
-        await interaction.channel.send({ content: '✅ **Final Embed:**', embeds: [embed] });
+        await interaction.channel.send({ embeds: [embed] });
         embedStates.delete(interaction.user.id);
         await interaction.message.delete().catch(() => {});
         await interaction.deferUpdate().catch(() => {});
