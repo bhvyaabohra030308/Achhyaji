@@ -1,14 +1,24 @@
-// ✅ Embed Builder Bot Core — Slash Command + Open Port Version
+// ✅ Embed Builder Bot Core — Slash Command + Guild Registration + Open Port
 const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, REST, Routes } = require('discord.js');
 const express = require('express');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+const client = new Client({ intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+] });
+
 const token = process.env.DISCORD_TOKEN || globalThis.DISCORD_TOKEN;
+const { CLIENT_ID, GUILD_ID } = process.env;
 const embedStates = new Map();
 
 client.once('ready', async () => {
     console.log(`✅ Logged in as ${client.user.tag}`);
-    await registerSlashCommand();
+    try {
+        await registerSlashCommand();
+    } catch (error) {
+        console.error('❌ Slash command registration failed:', error);
+    }
 });
 
 client.on('interactionCreate', async interaction => {
@@ -50,11 +60,11 @@ async function handleButton(interaction) {
     const { embed } = userState;
 
     const promptMap = {
-        'edit_title': '✏️ Please type the new title or type `skip`:',
-        'edit_description': '💬 Please type the new description or type `skip`:',
-        'edit_color': '🎨 Please type the hex color code (e.g., `#ff0000`) or type `skip`:',
-        'edit_image': '🖼️ Please type the image URL or type `skip`:',
-        'edit_thumbnail': '📎 Please type the thumbnail URL or type `skip`:'
+        'edit_title': '✏️ Please type the new title or type `skip`: ',
+        'edit_description': '💬 Please type the new description or type `skip`: ',
+        'edit_color': '🎨 Please type the hex color code (e.g., `#ff0000`) or type `skip`: ',
+        'edit_image': '🖼️ Please type the image URL or type `skip`: ',
+        'edit_thumbnail': '📎 Please type the thumbnail URL or type `skip`: '
     };
 
     if (promptMap[interaction.customId]) {
@@ -77,29 +87,34 @@ async function handleButton(interaction) {
         } else {
             await interaction.channel.send('⚠️ No input received.');
         }
+        await interaction.deferUpdate().catch(() => {});
         return;
     }
 
     if (interaction.customId === 'preview_confirm') {
         await interaction.channel.send({ content: '📤 **Your Embed Preview:**', embeds: [embed] });
-        await interaction.deferUpdate();
+        await interaction.deferUpdate().catch(() => {});
     }
 
     if (interaction.customId === 'cancel') {
         embedStates.delete(interaction.user.id);
         await interaction.channel.send('🚫 **Embed creation cancelled.**');
-        await interaction.deferUpdate();
+        await interaction.deferUpdate().catch(() => {});
     }
 }
 
 async function registerSlashCommand() {
-    const { CLIENT_ID } = process.env;
     const rest = new REST({ version: '10' }).setToken(token);
     await rest.put(
-        Routes.applicationCommands(CLIENT_ID),
-        { body: [{ name: 'createembed', description: 'Create a custom embed panel.' }] }
+        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+        { body: [
+            {
+                name: 'createembed',
+                description: 'Create a custom embed panel.'
+            }
+        ] }
     );
-    console.log('✅ Slash command registered.');
+    console.log('✅ Slash command registered to the guild immediately.');
 }
 
 client.login(token);
