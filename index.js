@@ -7,8 +7,13 @@ try {
 } catch (err) {
     console.log('Installing node-fetch automatically...');
     const { execSync } = require('child_process');
-    execSync('npm install node-fetch');
-    fetch = require('node-fetch');
+    try {
+        execSync('npm install node-fetch', { stdio: 'inherit' });
+        fetch = require('node-fetch');
+    } catch (installErr) {
+        console.error('❌ Failed to install node-fetch automatically:', installErr);
+        process.exit(1);
+    }
 }
 
 const client = new Client({ intents: [
@@ -93,7 +98,12 @@ async function handleButton(interaction) {
     };
 
     if (promptMap[interaction.customId]) {
+        try {
         await interaction.channel.send(promptMap[interaction.customId]);
+    } catch (sendErr) {
+        console.error('❌ Failed to send prompt message:', sendErr);
+        return;
+    }
         const collected = await interaction.channel.awaitMessages({ filter: m => m.author.id === interaction.user.id, max: 1, time: 30000 }).catch(() => null);
         if (collected?.first()) {
             const content = collected.first().content.trim();
