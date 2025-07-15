@@ -1,6 +1,7 @@
 // ✅ Embed Builder Bot Core — Slash Command + Guild Registration + Open Port
 const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, REST, Routes } = require('discord.js');
 const express = require('express');
+const fetch = require('node-fetch');
 
 const client = new Client({ intents: [
     GatewayIntentBits.Guilds,
@@ -13,6 +14,22 @@ const { CLIENT_ID, GUILD_ID } = process.env;
 const embedStates = new Map();
 
 client.once('ready', async () => {
+    const statuses = [
+        { name: 'QuickSwap Markets', type: 1, url: 'https://quickswap.exchange' },
+        { name: 'Funny Cats 🐱', type: 1, url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { name: 'Memes & Laughs 😂', type: 1, url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { name: 'Crypto Charts 📈', type: 1, url: 'https://quickswap.exchange' },
+        { name: 'Building Embeds 🛠️', type: 1, url: 'https://quickswap.exchange' },
+        { name: 'Trading Secrets 🤫', type: 1, url: 'https://quickswap.exchange' }
+    ];
+    let i = 0;
+    setInterval(() => {
+        client.user.setPresence({
+            activities: [statuses[i]],
+            status: 'online'
+        });
+        i = (i + 1) % statuses.length;
+    }, 4000); // Rotate every 4 seconds // Rotate every 15 seconds
     console.log(`✅ Logged in as ${client.user.tag}`);
     try {
         await registerSlashCommand();
@@ -92,8 +109,11 @@ async function handleButton(interaction) {
     }
 
     if (interaction.customId === 'preview_confirm') {
-        await interaction.channel.send({ content: '📤 **Your Embed Preview:**', embeds: [embed] });
-        await interaction.deferUpdate().catch(() => {});
+    await interaction.channel.send({ content: '✅ **Final Embed:**', embeds: [embed] });
+    embedStates.delete(interaction.user.id);
+    await interaction.message.delete().catch(() => {});
+    await interaction.deferUpdate().catch(() => {});
+}
     }
 
     if (interaction.customId === 'cancel') {
@@ -118,6 +138,11 @@ async function registerSlashCommand() {
 }
 
 client.login(token);
+
+// ✅ Keepalive Ping Interval
+setInterval(() => {
+    fetch('http://localhost:3000').catch(() => {});
+}, 4 * 60 * 1000); // Pings every 4 minutes
 
 // ✅ Open Port for Hosting Platforms
 const app = express();
