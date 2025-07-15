@@ -23,7 +23,7 @@ client.once('ready', async () => {
 
 client.on('interactionCreate', async interaction => {
     if (interaction.isChatInputCommand() && interaction.commandName === 'createembed') {
-        const embed = new EmbedBuilder();
+        const embed = new EmbedBuilder().setDescription("⠀");
         embedStates.set(interaction.user.id, { embed, fields: [], buttons: [] });
         await interaction.channel.send({
             content: '🎨 **Embed Builder Initialized**\nUse the buttons below to customize your embed. You can skip any options.',
