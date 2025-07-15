@@ -1,26 +1,34 @@
-// ✅ Embed Builder Bot Core — Clean Version (Discord.js v14+)
+// ✅ Embed Builder Bot Core — Prefix Command + Open Port Version
 const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
+const express = require('express');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 const token = process.env.DISCORD_TOKEN || globalThis.DISCORD_TOKEN;
-
+const prefix = ".";
 const embedStates = new Map();
 
 client.once('ready', () => console.log(`✅ Logged in as ${client.user.tag}`));
 
-client.on('interactionCreate', async interaction => {
-    if (interaction.isChatInputCommand() && interaction.commandName === 'createembed') {
-        const embed = new EmbedBuilder();
-        embedStates.set(interaction.user.id, { embed, fields: [], buttons: [] });
+client.on('messageCreate', async message => {
+    if (message.author.bot) return;
+    if (!message.content.startsWith(prefix)) return;
 
-        await interaction.reply({
+    const args = message.content.slice(prefix.length).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    if (command === 'createembed') {
+        const embed = new EmbedBuilder();
+        embedStates.set(message.author.id, { embed, fields: [], buttons: [] });
+
+        await message.reply({
             content: '🎨 **Embed Builder Initialized**\nUse the buttons below to customize your embed. You can skip any options.',
             embeds: [embed],
-            components: getMainMenu(),
-            ephemeral: true
+            components: getMainMenu()
         });
     }
+});
 
+client.on('interactionCreate', async interaction => {
     if (interaction.isButton()) {
         handleButton(interaction);
     }
@@ -93,3 +101,8 @@ async function askInChat(interaction, question) {
 }
 
 client.login(token);
+
+// ✅ Open Port for Hosting Platforms
+const app = express();
+app.get('/', (req, res) => res.send('Bot is Running'));
+app.listen(3000, () => console.log('✅ Web Server running on port 3000'));
