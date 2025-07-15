@@ -1,7 +1,15 @@
 // ✅ Embed Builder Bot Core — Slash Command + Guild Registration + Open Port
 const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, REST, Routes } = require('discord.js');
 const express = require('express');
-const fetch = require('node-fetch');
+let fetch;
+try {
+    fetch = require('node-fetch');
+} catch (err) {
+    console.log('Installing node-fetch automatically...');
+    const { execSync } = require('child_process');
+    execSync('npm install node-fetch');
+    fetch = require('node-fetch');
+}
 
 const client = new Client({ intents: [
     GatewayIntentBits.Guilds,
