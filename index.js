@@ -1,34 +1,28 @@
-// ✅ Embed Builder Bot Core — Prefix Command + Open Port Version
-const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
+// ✅ Embed Builder Bot Core — Slash Command + Open Port Version
+const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, REST, Routes } = require('discord.js');
 const express = require('express');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 const token = process.env.DISCORD_TOKEN || globalThis.DISCORD_TOKEN;
-const prefix = ".";
 const embedStates = new Map();
 
-client.once('ready', () => console.log(`✅ Logged in as ${client.user.tag}`));
+client.once('ready', async () => {
+    console.log(`✅ Logged in as ${client.user.tag}`);
+    await registerSlashCommand();
+});
 
-client.on('messageCreate', async message => {
-    if (message.author.bot) return;
-    if (!message.content.startsWith(prefix)) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
-
-    if (command === 'createembed') {
+client.on('interactionCreate', async interaction => {
+    if (interaction.isChatInputCommand() && interaction.commandName === 'createembed') {
         const embed = new EmbedBuilder();
-        embedStates.set(message.author.id, { embed, fields: [], buttons: [] });
-
-        await message.reply({
+        embedStates.set(interaction.user.id, { embed, fields: [], buttons: [] });
+        await interaction.channel.send({
             content: '🎨 **Embed Builder Initialized**\nUse the buttons below to customize your embed. You can skip any options.',
             embeds: [embed],
             components: getMainMenu()
         });
+        await interaction.reply({ content: '✅ Embed panel dropped in chat!', ephemeral: true });
     }
-});
 
-client.on('interactionCreate', async interaction => {
     if (interaction.isButton()) {
         handleButton(interaction);
     }
@@ -64,7 +58,7 @@ async function handleButton(interaction) {
     };
 
     if (promptMap[interaction.customId]) {
-        await askInChat(interaction, promptMap[interaction.customId]);
+        await interaction.channel.send(promptMap[interaction.customId]);
         const collected = await interaction.channel.awaitMessages({ filter: m => m.author.id === interaction.user.id, max: 1, time: 30000 }).catch(() => null);
         if (collected?.first()) {
             const content = collected.first().content.trim();
@@ -76,28 +70,36 @@ async function handleButton(interaction) {
                     case 'edit_image': embed.setImage(content); break;
                     case 'edit_thumbnail': embed.setThumbnail(content); break;
                 }
-                await interaction.followUp({ content: '✅ Embed updated!', ephemeral: true });
+                await interaction.channel.send('✅ Embed updated!');
             } else {
-                await interaction.followUp({ content: '⏭️ Skipped this option.', ephemeral: true });
+                await interaction.channel.send('⏭️ Skipped this option.');
             }
         } else {
-            await interaction.followUp({ content: '⚠️ No input received.', ephemeral: true });
+            await interaction.channel.send('⚠️ No input received.');
         }
         return;
     }
 
     if (interaction.customId === 'preview_confirm') {
-        await interaction.reply({ content: '📤 **Your Embed Preview:**', embeds: [embed], ephemeral: true });
+        await interaction.channel.send({ content: '📤 **Your Embed Preview:**', embeds: [embed] });
+        await interaction.deferUpdate();
     }
 
     if (interaction.customId === 'cancel') {
         embedStates.delete(interaction.user.id);
-        await interaction.reply({ content: '🚫 **Embed creation cancelled.**', ephemeral: true });
+        await interaction.channel.send('🚫 **Embed creation cancelled.**');
+        await interaction.deferUpdate();
     }
 }
 
-async function askInChat(interaction, question) {
-    await interaction.reply({ content: question, ephemeral: true });
+async function registerSlashCommand() {
+    const { CLIENT_ID } = process.env;
+    const rest = new REST({ version: '10' }).setToken(token);
+    await rest.put(
+        Routes.applicationCommands(CLIENT_ID),
+        { body: [{ name: 'createembed', description: 'Create a custom embed panel.' }] }
+    );
+    console.log('✅ Slash command registered.');
 }
 
 client.login(token);
