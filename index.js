@@ -109,11 +109,11 @@ async function handleButton(interaction) {
     }
 
     if (interaction.customId === 'preview_confirm') {
-    await interaction.channel.send({ content: '✅ **Final Embed:**', embeds: [embed] });
-    embedStates.delete(interaction.user.id);
-    await interaction.message.delete().catch(() => {});
-    await interaction.deferUpdate().catch(() => {});
-}
+        await interaction.channel.send({ content: '✅ **Final Embed:**', embeds: [embed] });
+        embedStates.delete(interaction.user.id);
+        await interaction.message.delete().catch(() => {});
+        await interaction.deferUpdate().catch(() => {});
+        return;
     }
 
     if (interaction.customId === 'cancel') {
