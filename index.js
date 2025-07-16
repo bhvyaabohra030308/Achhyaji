@@ -36,6 +36,11 @@ setInterval(() => {
 }, 4 * 60 * 1000);
 
 const commands = [
+    new SlashCommandBuilder().setName('help').setDescription('📖 Show help panel').toJSON(),
+    new SlashCommandBuilder()
+        .setName('ping')
+        .setDescription('🏓 Check bot latency')
+        .toJSON(),
     new SlashCommandBuilder()
         .setName('giveaway')
         .setDescription('🎉 Create a giveaway with duration, winners, and prize!')
@@ -83,6 +88,16 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 })();
 
 client.on(Events.ClientReady, () => {
+    const statuses = [
+        { name: '/giveaway | +giveaway', type: 0 },
+        { name: '/calc | +calc', type: 0 },
+        { name: 'Legendary Giveaways', type: 0 }
+    ];
+    let index = 0;
+    setInterval(() => {
+        client.user.setActivity(statuses[index]);
+        index = (index + 1) % statuses.length;
+    }, 10000);
     console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
@@ -121,6 +136,16 @@ client.on(Events.MessageCreate, async message => {
     ]
 });
         }
+    }
+    if (command === 'ping') {
+        return message.reply({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor('#00ff00')
+                    .setDescription(`🏓 Pong! Latency: **${client.ws.ping}ms**`)
+                    .setFooter({ text: message.guild?.name || 'Server', iconURL: client.user.displayAvatarURL() })
+            ]
+        });
     }
     if (command === 'giveaway') {
         const duration = args[0];
@@ -209,14 +234,35 @@ client.on(Events.MessageCreate, async message => {
     ]
 });
     }
-    if (command === 'giveawayhelp') {
-        message.reply({
-    embeds: [
-        new EmbedBuilder()
+    if (command === 'giveawayhelp' || command === 'help') {
+        const helpEmbed = new EmbedBuilder()
             .setColor('#00ff00')
-            .setDescription(args.join(' ') || '✅ Done.')
-            .setColor('#00ff00')
-            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+            .setTitle('❓ Help Panel')
+            .setDescription('View all command categories below!')
+            .addFields(
+                { name: '🎉 Giveaway', value: '`/giveaway` `/endgiveaway` `/reroll` `/listgiveaways`' },
+                { name: '🛠️ Embed', value: '`/createembed`' },
+                { name: '📊 Utilities', value: '`/ping` `/calc`' },
+                { name: '🔑 Prefix', value: '`+giveaway` `+endgiveaway` `+reroll` `+listgiveaways` `+ping` `+calc` `+createembed`' }
+            )
+            .setFooter({ text: `${message.guild?.name}`, iconURL: client.user.displayAvatarURL() });
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setLabel('Invite').setStyle(ButtonStyle.Link).setURL('https://discord.com/api/oauth2/authorize?client_id=' + CLIENT_ID + '&permissions=8&scope=bot%20applications.commands'),
+            new ButtonBuilder().setLabel('Support Server').setStyle(ButtonStyle.Link).setURL('https://discord.gg/yourserver')
+        );
+        const selectMenu = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId('help_select')
+                .setPlaceholder('Choose a command category')
+                .addOptions([
+                    { label: 'Giveaway', description: 'Giveaway related commands', value: 'giveaway' },
+                    { label: 'Embed', description: 'Embed builder commands', value: 'embed' },
+                    { label: 'Utilities', description: 'Ping, Calc commands', value: 'utilities' },
+                    { label: 'Prefix Commands', description: 'All + prefix commands', value: 'prefix' }
+                ])
+        );
+        message.reply({ embeds: [helpEmbed], components: [row] });
+    } • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
     ]
 });
     }
@@ -254,6 +300,29 @@ function handleSlashCommands(interaction) {
             await interaction.channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(joinButton, infoButton)] });
         }
 
+        if (interaction.commandName === 'ping') {
+            await interaction.reply({ content: `🏓 Pong! Latency: **${client.ws.ping}ms**`, ephemeral: true });
+            return;
+        }
+        if (interaction.commandName === 'help') {
+            const helpEmbed = new EmbedBuilder()
+                .setColor('#00ff00')
+                .setTitle('❓ Help Panel')
+                .setDescription('View all command categories below!')
+                .addFields(
+                    { name: '🎉 Giveaway', value: '`/giveaway` `/endgiveaway` `/reroll` `/listgiveaways`' },
+                    { name: '🛠️ Embed', value: '`/createembed`' },
+                    { name: '📊 Utilities', value: '`/ping` `/calc`' },
+                    { name: '🔑 Prefix', value: '`+giveaway` `+endgiveaway` `+reroll` `+listgiveaways` `+ping` `+calc` `+createembed`' }
+                )
+                .setFooter({ text: `${interaction.guild.name}`, iconURL: client.user.displayAvatarURL() });
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setLabel('Invite').setStyle(ButtonStyle.Link).setURL('https://discord.com/api/oauth2/authorize?client_id=' + CLIENT_ID + '&permissions=8&scope=bot%20applications.commands'),
+                new ButtonBuilder().setLabel('Support Server').setStyle(ButtonStyle.Link).setURL('https://discord.gg/yourserver')
+            );
+            await interaction.reply({ embeds: [helpEmbed], components: [row, selectMenu], ephemeral: false });
+            return;
+        }
         if (interaction.commandName === 'createembed') {
             const embed = new EmbedBuilder().setDescription("Embed preview");
             embedStates.set(interaction.user.id, { embed });
@@ -266,6 +335,15 @@ function handleSlashCommands(interaction) {
     }
 
     if (interaction.isButton()) handleButton(interaction);
+    if (interaction.isStringSelectMenu() && interaction.customId === 'help_select') {
+        const category = interaction.values[0];
+        const helpEmbed = new EmbedBuilder().setColor('#00ff00').setTitle('❓ Help Panel');
+        if (category === 'giveaway') helpEmbed.setDescription('🎉 Giveaway: `/giveaway` `/endgiveaway` `/reroll` `/listgiveaways`');
+        if (category === 'embed') helpEmbed.setDescription('🛠️ Embed: `/createembed`');
+        if (category === 'utilities') helpEmbed.setDescription('📊 Utilities: `/ping` `/calc`');
+        if (category === 'prefix') helpEmbed.setDescription('🔑 Prefix: `+giveaway` `+endgiveaway` `+reroll` `+listgiveaways` `+ping` `+calc` `+createembed`');
+        await interaction.update({ embeds: [helpEmbed] });
+    }
 });
 
 function getMainMenu() {
