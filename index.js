@@ -1,4 +1,4 @@
-// index.js — Combined Advanced Giveaway Bot + Embed Builder Bot
+// index.js — Refined Advanced Giveaway Bot + Embed Builder Bot with Cleaner UX
 
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, Events } = require('discord.js');
 const express = require("express");
@@ -23,7 +23,7 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
 
 const embedStates = new Map();
@@ -38,14 +38,37 @@ setInterval(() => {
 const commands = [
     new SlashCommandBuilder()
         .setName('giveaway')
-        .setDescription('Start a giveaway')
-        .addStringOption(option => option.setName('duration').setDescription('Example: 1h, 30m').setRequired(true))
+        .setDescription('🎉 Create a giveaway with duration, winners, and prize!')
+        .addStringOption(option => option.setName('duration').setDescription('Duration (e.g., 1h, 30m)').setRequired(true))
         .addIntegerOption(option => option.setName('winners').setDescription('Number of winners').setRequired(true))
-        .addStringOption(option => option.setName('prize').setDescription('Giveaway prize').setRequired(true))
+        .addStringOption(option => option.setName('prize').setDescription('The prize for the giveaway').setRequired(true))
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('endgiveaway')
+        .setDescription('❌ End an active giveaway')
+        .addStringOption(option => option.setName('message_id').setDescription('Message ID of the giveaway to end').setRequired(true))
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('reroll')
+        .setDescription('🔄 Reroll winners for a finished giveaway')
+        .addStringOption(option => option.setName('message_id').setDescription('Message ID of the giveaway to reroll').setRequired(true))
         .toJSON(),
     new SlashCommandBuilder()
         .setName('createembed')
-        .setDescription('Create a custom embed panel.')
+        .setDescription('🛠️ Start a custom embed creation panel.')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('listgiveaways')
+        .setDescription('📜 List all active giveaways')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('giveawayhelp')
+        .setDescription('❓ Get help about giveaway commands')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('calc')
+        .setDescription('🧮 Calculate any math expression')
+        .addStringOption(option => option.setName('expression').setDescription('Math expression to calculate').setRequired(true))
         .toJSON()
 ];
 
@@ -64,7 +87,153 @@ client.on(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
+    
+        handleSlashCommands(interaction);
+    }
+});
+
+client.on(Events.MessageCreate, async message => {
+    if (!message.content.startsWith('+') || message.author.bot) return;
+    const args = message.content.slice(1).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    if (command === 'calc') {
+        try {
+            const expression = args.join(' ');
+            const result = Function(`return (${expression})`)();
+            await message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: message.guild?.name || 'Server', iconURL: client.user.displayAvatarURL() })
+    ]
+});
+        } catch {
+            await message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+        }
+    }
+    if (command === 'giveaway') {
+        const duration = args[0];
+        const winners = parseInt(args[1]);
+        const prize = args.slice(2).join(' ');
+        if (!duration || !winners || !prize) return message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+        message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+    }
+    if (command === 'endgiveaway') {
+        const messageId = args[0];
+        if (!messageId) return message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+        message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+    }
+    if (command === 'reroll') {
+        const messageId = args[0];
+        if (!messageId) return message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+        message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+    }
+    if (command === 'createembed') {
+        message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+    }
+    if (command === 'listgiveaways') {
+        message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+    }
+    if (command === 'giveawayhelp') {
+        message.reply({
+    embeds: [
+        new EmbedBuilder()
+            .setColor('#00ff00')
+            .setDescription(args.join(' ') || '✅ Done.')
+            .setColor('#00ff00')
+            .setFooter({ text: `${message.guild?.name || 'Server'} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() })
+    ]
+});
+    }
+});
+
+function handleSlashCommands(interaction) {
     if (interaction.isChatInputCommand()) {
+        if (interaction.commandName === 'calc') {
+            try {
+                const expression = interaction.options.getString('expression');
+                const result = Function(`return (${expression})`)();
+                await interaction.reply({ content: `🧮 Result: **${result}**`, ephemeral: true });
+            } catch {
+                await interaction.reply({ content: '⚠️ Invalid expression.', ephemeral: true });
+            }
+            return;
+        }
         if (interaction.commandName === 'giveaway') {
             const duration = interaction.options.getString('duration');
             const winners = interaction.options.getInteger('winners');
@@ -73,33 +242,26 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.reply({ content: `✅ Giveaway for **${prize}** has been created.`, ephemeral: true });
 
             const embed = new EmbedBuilder()
-                .setTitle('🎁 **LEGENDARY GIVEAWAY EVENT!** 🎁')
-                .setDescription(`✨ **Prize:** ${prize}
-⏳ **Duration:** ${duration}
-🏆 **Number of Winners:** ${winners}
-
-💡 *Click the button below to participate and stand a chance to win!*`)
+                .setTitle('🎁 LEGENDARY GIVEAWAY')
+                .setDescription(`🎉 **Prize:** ${prize}\n⏳ **Duration:** ${duration}\n🏆 **Winners:** ${winners}\n\nClick the button below to participate.`)
                 .setColor('#00ff00')
                 .setThumbnail('https://raw.githubusercontent.com/bhvyaabohra030308/Achhyaji/refs/heads/main/image.png')
-                .setFooter({ text: `🔔 Hosted by: ${interaction.guild.name} | Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() });
+                .setFooter({ text: `${interaction.guild.name} • Powered by Best Giveaway Bot`, iconURL: client.user.displayAvatarURL() });
 
-            const joinButton = new ButtonBuilder().setCustomId('join_giveaway').setLabel('🎉 Join Giveaway').setStyle(ButtonStyle.Success);
+            const joinButton = new ButtonBuilder().setCustomId('join_giveaway').setLabel('🎉 Join').setStyle(ButtonStyle.Success);
             const infoButton = new ButtonBuilder().setCustomId('giveaway_info').setLabel('ℹ️ Info').setStyle(ButtonStyle.Secondary);
 
-            const row = new ActionRowBuilder().addComponents(joinButton, infoButton);
-
-            await interaction.channel.send({ embeds: [embed], components: [row] });
+            await interaction.channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(joinButton, infoButton)] });
         }
 
         if (interaction.commandName === 'createembed') {
-            const embed = new EmbedBuilder().setDescription("⠀");
-            embedStates.set(interaction.user.id, { embed, fields: [], buttons: [] });
+            const embed = new EmbedBuilder().setDescription("Embed preview");
+            embedStates.set(interaction.user.id, { embed });
+            await interaction.reply({ content: '✅ Embed panel initialized. Customize your embed now.', ephemeral: true });
             await interaction.channel.send({
-                content: '🎨 **Embed Builder Initialized**\nUse the buttons below to customize your embed. You can skip any options.',
                 embeds: [embed],
                 components: getMainMenu()
             });
-            await interaction.reply({ content: '✅ Embed panel dropped in chat!', ephemeral: true });
         }
     }
 
@@ -111,12 +273,10 @@ function getMainMenu() {
         new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('edit_title').setLabel('📄 Title').setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId('edit_description').setLabel('📝 Description').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('edit_color').setLabel('🌈 Color').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('edit_color').setLabel('🎨 Color').setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId('edit_image').setLabel('🖼️ Image').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('edit_thumbnail').setLabel('📎 Thumbnail').setStyle(ButtonStyle.Secondary)
-        ),
-        new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('preview_confirm').setLabel('✅ Preview / Confirm').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('edit_thumbnail').setLabel('📎 Thumbnail').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('preview_confirm').setLabel('✅ Confirm').setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId('cancel').setLabel('❌ Cancel').setStyle(ButtonStyle.Danger)
         )
     ];
@@ -128,15 +288,15 @@ async function handleButton(interaction) {
     const { embed } = userState;
 
     const promptMap = {
-        'edit_title': '✏️ Please type the new title or type `skip`: ',
-        'edit_description': '💬 Please type the new description or type `skip`: ',
-        'edit_color': '🎨 Please type the hex color code (e.g., `#ff0000`) or type `skip`: ',
-        'edit_image': '🖼️ Please type the image URL or type `skip`: ',
-        'edit_thumbnail': '📎 Please type the thumbnail URL or type `skip`: '
+        'edit_title': '✏️ Enter new title or type `skip`',
+        'edit_description': '💬 Enter new description or type `skip`',
+        'edit_color': '🎨 Enter hex color (e.g., `#ff0000`) or type `skip`',
+        'edit_image': '🖼️ Enter image URL or type `skip`',
+        'edit_thumbnail': '📎 Enter thumbnail URL or type `skip`'
     };
 
     if (promptMap[interaction.customId]) {
-        await interaction.channel.send(promptMap[interaction.customId]);
+        await interaction.reply({ content: promptMap[interaction.customId], ephemeral: true });
         const collected = await interaction.channel.awaitMessages({ filter: m => m.author.id === interaction.user.id, max: 1, time: 30000 }).catch(() => null);
         if (collected?.first()) {
             const content = collected.first().content.trim();
@@ -148,14 +308,13 @@ async function handleButton(interaction) {
                     case 'edit_image': embed.setImage(content); break;
                     case 'edit_thumbnail': embed.setThumbnail(content); break;
                 }
-                await interaction.channel.send('✅ Embed updated!');
+                await interaction.followUp({ content: '✅ Embed updated!', ephemeral: true });
             } else {
-                await interaction.channel.send('⏭️ Skipped this option.');
+                await interaction.followUp({ content: '⏭️ Skipped.', ephemeral: true });
             }
         } else {
-            await interaction.channel.send('⚠️ No input received.');
+            await interaction.followUp({ content: '⚠️ No input received.', ephemeral: true });
         }
-        await interaction.deferUpdate().catch(() => {});
         return;
     }
 
@@ -163,14 +322,13 @@ async function handleButton(interaction) {
         await interaction.channel.send({ embeds: [embed] });
         embedStates.delete(interaction.user.id);
         await interaction.message.delete().catch(() => {});
-        await interaction.deferUpdate().catch(() => {});
+        await interaction.reply({ content: '✅ Embed confirmed and posted.', ephemeral: true });
         return;
     }
 
     if (interaction.customId === 'cancel') {
         embedStates.delete(interaction.user.id);
-        await interaction.channel.send('🚫 **Embed creation cancelled.**');
-        await interaction.deferUpdate().catch(() => {});
+        await interaction.reply({ content: '🚫 Embed creation cancelled.', ephemeral: true });
     }
 }
 
