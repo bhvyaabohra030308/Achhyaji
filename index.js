@@ -208,7 +208,7 @@ async function handleButton(interaction) {
         'edit_description': '💬 Enter new description or type `skip`',
         'edit_color': '🎨 Enter hex color or type `skip`',
         'edit_image': '🖼️ Enter image URL or type `skip`',
-        'edit_thumbnail': '📎 Enter thumbnail URL or type `skip`
+        'edit_thumbnail': '📎 Enter thumbnail URL or type `skip`'
     };
     if (promptMap[interaction.customId]) {
         await interaction.reply({ content: promptMap[interaction.customId], ephemeral: true });
