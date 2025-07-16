@@ -104,7 +104,6 @@ client.on(Events.ClientReady, () => {
 client.on(Events.InteractionCreate, async interaction => {
     
         handleSlashCommands(interaction);
-    }
 });
 
 client.on(Events.MessageCreate, async message => {
